@@ -1,0 +1,61 @@
+# Configuration du système de veille emploi
+# Modifiez ce fichier selon vos besoins
+
+recherche:
+  # Mots-clés des postes qui vous intéressent
+  mots_cles:
+    - "développeur"
+    - "informatique"
+    - "data"
+    - "réseau"
+    - "web"
+  # Localisations acceptées
+  localisations:
+    - "Ouagadougou"
+    - "Burkina Faso"
+    - "Télétravail"
+    - "Remote"
+  # Nombre d'années d'expérience minimum (0 = tous niveaux)
+  experience_min: 0
+
+sources:
+  emploi_bf: true
+  afrique_it: true
+  anpe_bf: true
+  linkedin: false   # Activer après configuration du cookie
+
+scraping:
+  # Intervalle entre deux passages (en heures)
+  intervalle_heures: 6
+  # Délai entre requêtes pour ne pas surcharger les serveurs (secondes)
+  delai_entre_requetes: 2
+  timeout_secondes: 15
+
+notifications:
+  # Canal principal : "whatsapp" ou "sms"
+  canal: "whatsapp"
+  # Votre numéro de téléphone (format international)
+  numero: "+22670000000"
+  # Envoyer aussi par SMS en plus de WhatsApp ?
+  double_canal: false
+
+cv:
+  # Chemin vers votre CV (PDF ou DOCX)
+  fichier: "cv.pdf"
+  # Votre adresse email d'envoi
+  email_expediteur: "votre@gmail.com"
+  # Votre nom complet (affiché dans l'objet du mail)
+  nom_complet: "Votre Nom"
+  # Objet de l'email (le titre du poste sera ajouté automatiquement)
+  objet_template: "Candidature — {titre}"
+  # Fichier contenant le corps du mail
+  message_template: "templates/cv_message.txt"
+
+# Remplir avec vos credentials API (ou utiliser le fichier .env)
+credentials:
+  twilio_account_sid: ""       # ou via TWILIO_ACCOUNT_SID dans .env
+  twilio_auth_token: ""        # ou via TWILIO_AUTH_TOKEN dans .env
+  twilio_whatsapp_from: "whatsapp:+14155238886"  # numéro sandbox Twilio
+  africastalking_username: ""  # ou via AT_USERNAME dans .env
+  africastalking_api_key: ""   # ou via AT_API_KEY dans .env
+  gmail_app_password: ""       # ou via GMAIL_APP_PASSWORD dans .env

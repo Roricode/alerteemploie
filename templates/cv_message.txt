@@ -1,0 +1,10 @@
+Madame, Monsieur,
+
+Je me permets de vous adresser ma candidature pour le poste de {titre} au sein de votre organisation.
+
+Motivé(e) et disponible, je reste à votre disposition pour tout entretien à votre convenance.
+
+Veuillez trouver ci-joint mon curriculum vitae.
+
+Cordialement,
+{nom_complet}
