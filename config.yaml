@@ -37,6 +37,9 @@ notifications:
   numero: "+22670000000"
   # Envoyer aussi par SMS en plus de WhatsApp ?
   double_canal: false
+  # Mode simulation : affiche les messages dans le terminal sans les envoyer
+  # Mettre à false une fois vos credentials Twilio configurés dans .env
+  mock: true
 
 cv:
   # Chemin vers votre CV (PDF ou DOCX)

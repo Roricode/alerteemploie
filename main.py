@@ -4,6 +4,12 @@
 import sys
 from pathlib import Path
 
+# Force UTF-8 sur Windows (évite les erreurs cp1252 avec les accents)
+if sys.stdout.encoding != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8")
+if sys.stderr.encoding != "utf-8":
+    sys.stderr.reconfigure(encoding="utf-8")
+
 import click
 import yaml
 from dotenv import load_dotenv
@@ -165,9 +171,50 @@ def notify():
     _envoyer_notifications(config)
 
 
+@cli.command("test-notif")
+@click.option("--canal", type=click.Choice(["whatsapp", "sms"]), default=None,
+              help="Canal à tester (défaut : celui de config.yaml).")
+def test_notif(canal):
+    """Envoie un message de test WhatsApp/SMS (ou simulation si mock: true)."""
+    config = charger_config()
+    canal  = canal or config["notifications"]["canal"]
+    numero = config["notifications"]["numero"]
+    mock   = config["notifications"].get("mock", False)
+
+    message = (
+        "Alerte Emploi - test de connexion\n"
+        "--------------------\n"
+        "Votre systeme de veille emploi est bien configure !\n"
+        "Vous recevrez vos alertes ici."
+    )
+
+    if mock:
+        from notifier.mock import envoyer
+        envoyer(numero, message, canal)
+        click.echo(f"\n[MOCK] Simulation OK — canal={canal}, numero={numero}")
+        click.echo("Passez 'mock: false' dans config.yaml pour envoyer pour de vrai.")
+        return
+
+    try:
+        if canal == "whatsapp":
+            from notifier.whatsapp import envoyer
+            sid = envoyer(numero, message, config)
+            click.echo(f"WhatsApp envoyé (SID: {sid})")
+        else:
+            from notifier.sms import envoyer
+            envoyer(numero, message, config)
+            click.echo(f"SMS envoyé à {numero}")
+    except Exception as e:
+        click.echo(f"Erreur : {e}", err=True)
+        click.echo("\nVérifiez votre fichier .env :", err=True)
+        click.echo("  TWILIO_ACCOUNT_SID=ACxxxx", err=True)
+        click.echo("  TWILIO_AUTH_TOKEN=xxxx", err=True)
+        click.echo("  TWILIO_WHATSAPP_FROM=whatsapp:+14155238886", err=True)
+        sys.exit(1)
+
+
 def _envoyer_notifications(config: dict) -> None:
-    """Envoie une notification par WhatsApp ou SMS pour chaque offre non notifiée."""
-    import os
+    from notifier.whatsapp import formatter_offre
     from storage.db import offres_non_notifiees, marquer_notifie
 
     offres = offres_non_notifiees()
@@ -175,53 +222,26 @@ def _envoyer_notifications(config: dict) -> None:
         click.echo("Aucune offre à notifier.")
         return
 
-    canal = config["notifications"]["canal"]
+    canal  = config["notifications"]["canal"]
     numero = config["notifications"]["numero"]
+    mock   = config["notifications"].get("mock", False)
 
     for offre in offres:
-        message = (
-            f"Nouvelle offre ({offre['source']}) :\n"
-            f"*{offre['titre']}*\n"
-            f"{offre['entreprise']} — {offre['localisation']}\n"
-            f"{offre['url']}"
-        )
+        message = formatter_offre(offre)
         try:
-            if canal == "whatsapp":
-                _envoyer_whatsapp(config, numero, message)
+            if mock:
+                from notifier.mock import envoyer
+                envoyer(numero, message, canal)
+            elif canal == "whatsapp":
+                from notifier.whatsapp import envoyer
+                envoyer(numero, message, config)
             else:
-                _envoyer_sms(config, numero, message)
+                from notifier.sms import envoyer
+                envoyer(numero, message, config)
             marquer_notifie(offre["id"])
-            click.echo(f"  Notifié : {offre['titre']}")
+            click.echo(f"  {'[MOCK] ' if mock else ''}Notifié : {offre['titre']}")
         except Exception as e:
-            click.echo(f"  Erreur notification pour #{offre['id']}: {e}", err=True)
-
-
-def _envoyer_whatsapp(config: dict, numero: str, message: str) -> None:
-    import os
-    from twilio.rest import Client
-
-    sid = os.getenv("TWILIO_ACCOUNT_SID") or config["credentials"]["twilio_account_sid"]
-    token = os.getenv("TWILIO_AUTH_TOKEN") or config["credentials"]["twilio_auth_token"]
-    from_num = os.getenv("TWILIO_WHATSAPP_FROM") or config["credentials"]["twilio_whatsapp_from"]
-
-    client = Client(sid, token)
-    client.messages.create(
-        body=message,
-        from_=from_num,
-        to=f"whatsapp:{numero}",
-    )
-
-
-def _envoyer_sms(config: dict, numero: str, message: str) -> None:
-    import os
-    import africastalking
-
-    username = os.getenv("AT_USERNAME") or config["credentials"]["africastalking_username"]
-    api_key = os.getenv("AT_API_KEY") or config["credentials"]["africastalking_api_key"]
-
-    africastalking.initialize(username, api_key)
-    sms = africastalking.SMS
-    sms.send(message[:160], [numero])
+            click.echo(f"  Erreur pour #{offre['id']} : {e}", err=True)
 
 
 if __name__ == "__main__":
