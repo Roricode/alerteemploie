@@ -31,14 +31,12 @@ scraping:
   timeout_secondes: 15
 
 notifications:
-  # Canal : "callmebot" (WhatsApp gratuit), "whatsapp" (Twilio) ou "sms" (Africa's Talking)
-  canal: "callmebot"
-  # Votre numéro de téléphone (format international)
+  # Canal : "telegram" (recommande), "callmebot", "whatsapp" (Twilio), "sms"
+  canal: "telegram"
+  # Votre numéro de téléphone (pour WhatsApp/SMS uniquement)
   numero: "+22670000000"
-  # Envoyer aussi par SMS en plus de WhatsApp ?
-  double_canal: false
   # Mode simulation : affiche les messages dans le terminal sans les envoyer
-  # Mettre à false une fois votre clé CallMeBot reçue
+  # Mettre à false une fois votre bot Telegram configuré
   mock: true
 
 cv:

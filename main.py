@@ -205,7 +205,11 @@ def test_notif(canal):
         return
 
     try:
-        if canal == "callmebot":
+        if canal == "telegram":
+            from notifier.telegram import envoyer
+            envoyer(message, config)
+            click.echo("Message Telegram envoye.")
+        elif canal == "callmebot":
             from notifier.callmebot import envoyer
             envoyer(numero, message, config)
             click.echo(f"WhatsApp CallMeBot envoye a {numero}")
@@ -219,7 +223,7 @@ def test_notif(canal):
             click.echo(f"SMS envoye a {numero}")
     except Exception as e:
         click.echo(f"Erreur : {e}", err=True)
-        click.echo("\nPour CallMeBot : ajoutez CALLMEBOT_API_KEY=xxxxxx dans .env", err=True)
+        click.echo("\nVerifiez TELEGRAM_TOKEN et TELEGRAM_CHAT_ID dans .env", err=True)
         sys.exit(1)
 
 
@@ -242,6 +246,9 @@ def _envoyer_notifications(config: dict) -> None:
             if mock:
                 from notifier.mock import envoyer
                 envoyer(numero, message, canal)
+            elif canal == "telegram":
+                from notifier.telegram import envoyer
+                envoyer(message, config)
             elif canal == "callmebot":
                 from notifier.callmebot import envoyer
                 envoyer(numero, message, config)
