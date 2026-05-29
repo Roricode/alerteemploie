@@ -19,15 +19,15 @@ def charger_config() -> dict:
 
 
 def _scrapers_actifs(config: dict):
-    from scrapers.emploi_bf import EmploiBfScraper
-    from scrapers.afrique_it import AfriqueItScraper
+    from scrapers.linkedin import LinkedInScraper
+    from scrapers.fasotuma import FasoTumaScraper
 
     sources = config.get("sources", {})
     scrapers = []
-    if sources.get("emploi_bf", True):
-        scrapers.append(EmploiBfScraper(config))
-    if sources.get("afrique_it", True):
-        scrapers.append(AfriqueItScraper(config))
+    if sources.get("linkedin", True):
+        scrapers.append(LinkedInScraper(config))
+    if sources.get("fasotuma", False):
+        scrapers.append(FasoTumaScraper(config))
     return scrapers
 
 

@@ -19,10 +19,9 @@ recherche:
   experience_min: 0
 
 sources:
-  emploi_bf: true
-  afrique_it: true
-  anpe_bf: true
-  linkedin: false   # Activer après configuration du cookie
+  linkedin: true     # Offres publiques sans login — fonctionne directement
+  fasotuma: false    # FasoTuma-BF (local) — nécessite : pip install playwright && playwright install chromium
+  anpe_bf: false     # À implémenter (Phase 2)
 
 scraping:
   # Intervalle entre deux passages (en heures)
