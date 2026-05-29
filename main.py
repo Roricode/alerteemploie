@@ -103,65 +103,74 @@ def list_jobs(limite):
 @cli.command("send-cv")
 @click.argument("job_id", type=int)
 @click.argument("email_recruteur")
-@click.option("--cv", "cv_path", default=None, help="Chemin vers le CV (défaut : config.yaml).")
+@click.option("--cv", "cv_path", default=None, help="Chemin vers le CV (defaut : config.yaml).")
 def send_cv(job_id, email_recruteur, cv_path):
     """Envoie votre CV par email pour l'offre JOB_ID.
 
-    Exemple : python main.py send-cv 42 recruteur@entreprise.com
+    Exemple : python main.py send-cv 10 recruteur@entreprise.com
     """
-    import os
-    import smtplib
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
-    from email.mime.application import MIMEApplication
-    from storage.db import init_db, get_offre
+    from cv_sender.mailer import envoyer, envoyer_mock
+    from storage.db import init_db, get_offre, enregistrer_envoi_cv
 
     init_db()
     config = charger_config()
-    cv_config = config["cv"]
+    mock = config["notifications"].get("mock", False)
 
     offre = get_offre(job_id)
     if not offre:
-        click.echo(f"Offre #{job_id} introuvable.", err=True)
+        click.echo(f"Offre #{job_id} introuvable. Lancez 'python main.py list' pour voir les IDs.", err=True)
         sys.exit(1)
 
-    chemin_cv = Path(cv_path or cv_config["fichier"])
-    if not chemin_cv.exists():
-        click.echo(f"CV introuvable : {chemin_cv}", err=True)
+    chemin_cv = Path(cv_path) if cv_path else None
+
+    click.echo(f"Offre    : {offre['titre']}")
+    click.echo(f"Societe  : {offre['entreprise'] or '—'}")
+    click.echo(f"Email    : {email_recruteur}")
+    click.echo(f"Mode     : {'SIMULATION' if mock else 'REEL'}")
+    click.echo()
+
+    try:
+        if mock:
+            envoyer_mock(offre, email_recruteur, config, chemin_cv)
+        else:
+            envoyer(offre, email_recruteur, config, chemin_cv)
+
+        enregistrer_envoi_cv(offre["id"], email_recruteur, mock=mock)
+        statut = "[MOCK] Simule" if mock else "Envoye"
+        click.echo(f"{statut} : CV pour '{offre['titre']}' -> {email_recruteur}")
+
+    except FileNotFoundError as e:
+        click.echo(f"Erreur : {e}", err=True)
+        click.echo("Deposez votre CV.pdf a la racine du projet ou precisez --cv chemin/vers/cv.pdf", err=True)
+        sys.exit(1)
+    except ValueError as e:
+        click.echo(f"Erreur configuration : {e}", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"Erreur envoi : {e}", err=True)
         sys.exit(1)
 
-    template_path = Path(cv_config["message_template"])
-    corps = template_path.read_text(encoding="utf-8").format(
-        titre=offre["titre"],
-        nom_complet=cv_config["nom_complet"],
-    )
 
-    objet = cv_config["objet_template"].format(titre=offre["titre"])
-    expediteur = cv_config["email_expediteur"]
-    password = os.getenv("GMAIL_APP_PASSWORD") or config["credentials"].get("gmail_app_password", "")
+@cli.command("cv-history")
+@click.option("--job", "job_id", default=None, type=int, help="Filtrer par ID d'offre.")
+def cv_history(job_id):
+    """Affiche l'historique des CV envoyes."""
+    from storage.db import init_db, historique_cv
 
-    if not password:
-        click.echo("GMAIL_APP_PASSWORD manquant dans .env ou config.yaml.", err=True)
-        sys.exit(1)
+    init_db()
+    envois = historique_cv(job_id)
 
-    msg = MIMEMultipart()
-    msg["From"] = expediteur
-    msg["To"] = email_recruteur
-    msg["Subject"] = objet
-    msg.attach(MIMEText(corps, "plain", "utf-8"))
+    if not envois:
+        click.echo("Aucun CV envoye pour l'instant.")
+        return
 
-    with open(chemin_cv, "rb") as f:
-        attachment = MIMEApplication(f.read(), _subtype="pdf")
-        attachment.add_header(
-            "Content-Disposition", "attachment", filename=chemin_cv.name
+    for e in envois:
+        mock_tag = " [MOCK]" if e["mock"] else ""
+        click.echo(
+            f"{e['date_envoi']}{mock_tag}  ->  {e['email_dest']}"
         )
-        msg.attach(attachment)
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(expediteur, password)
-        server.sendmail(expediteur, email_recruteur, msg.as_string())
-
-    click.echo(f"CV envoyé à {email_recruteur} pour l'offre : {offre['titre']}")
+        click.echo(f"   Offre #{e['offre_id']} : {e['titre']} ({e['entreprise']})")
+        click.echo()
 
 
 @cli.command()
