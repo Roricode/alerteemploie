@@ -1,10 +1,10 @@
-requests==2.31.0
+requests==2.33.0
 beautifulsoup4==4.12.3
-lxml==5.1.0
+lxml==6.1.0
 playwright==1.43.0
 pyyaml==6.0.1
 click==8.1.7
 apscheduler==3.10.4
 twilio==9.0.5
 africastalking==1.2.5
-python-dotenv==1.0.1
+python-dotenv==1.2.2
