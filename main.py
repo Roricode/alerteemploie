@@ -205,20 +205,21 @@ def test_notif(canal):
         return
 
     try:
-        if canal == "whatsapp":
+        if canal == "callmebot":
+            from notifier.callmebot import envoyer
+            envoyer(numero, message, config)
+            click.echo(f"WhatsApp CallMeBot envoye a {numero}")
+        elif canal == "whatsapp":
             from notifier.whatsapp import envoyer
             sid = envoyer(numero, message, config)
-            click.echo(f"WhatsApp envoyé (SID: {sid})")
+            click.echo(f"WhatsApp Twilio envoye (SID: {sid})")
         else:
             from notifier.sms import envoyer
             envoyer(numero, message, config)
-            click.echo(f"SMS envoyé à {numero}")
+            click.echo(f"SMS envoye a {numero}")
     except Exception as e:
         click.echo(f"Erreur : {e}", err=True)
-        click.echo("\nVérifiez votre fichier .env :", err=True)
-        click.echo("  TWILIO_ACCOUNT_SID=ACxxxx", err=True)
-        click.echo("  TWILIO_AUTH_TOKEN=xxxx", err=True)
-        click.echo("  TWILIO_WHATSAPP_FROM=whatsapp:+14155238886", err=True)
+        click.echo("\nPour CallMeBot : ajoutez CALLMEBOT_API_KEY=xxxxxx dans .env", err=True)
         sys.exit(1)
 
 
@@ -241,6 +242,9 @@ def _envoyer_notifications(config: dict) -> None:
             if mock:
                 from notifier.mock import envoyer
                 envoyer(numero, message, canal)
+            elif canal == "callmebot":
+                from notifier.callmebot import envoyer
+                envoyer(numero, message, config)
             elif canal == "whatsapp":
                 from notifier.whatsapp import envoyer
                 envoyer(numero, message, config)
@@ -248,7 +252,7 @@ def _envoyer_notifications(config: dict) -> None:
                 from notifier.sms import envoyer
                 envoyer(numero, message, config)
             marquer_notifie(offre["id"])
-            click.echo(f"  {'[MOCK] ' if mock else ''}Notifié : {offre['titre']}")
+            click.echo(f"  {'[MOCK] ' if mock else ''}Notifie : {offre['titre']}")
         except Exception as e:
             click.echo(f"  Erreur pour #{offre['id']} : {e}", err=True)
 
